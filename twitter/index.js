@@ -70,10 +70,29 @@ var down = {
       resolve()
     });
   },
+  cmd(dir, cmd) {
+    return new Promise((resolve, reject) => {
+      child_process.exec(
+        // `cd ${dir} && ffmpeg -i input.txt -acodec copy -vcodec copy -absf aac_adtstoasc index.mp4`,
+        `cd ${dir} && ${cmd}`,
+        function (error, stdout, stderr) {
+          if (error) {
+            console.error('合成失败---', error);
+            reject('concatFiles');
+          } else {
+            console.log('合成成功--', stdout);
+            //删除临时文件
+            resolve();
+          }
+        }
+      );
+    });
+  },
   concatFiles(dir) {
     return new Promise((resolve, reject) => {
       child_process.exec(
-        `cd ${dir} && ffmpeg -i input.txt -acodec copy -vcodec copy -absf aac_adtstoasc index.mp4`,
+        // `cd ${dir} && ffmpeg -i input.txt -acodec copy -vcodec copy -absf aac_adtstoasc index.mp4`,
+        `cd ${dir} && ffmpeg -f concat -safe 0 -i input.txt -c copy output.mp4`,
         function (error, stdout, stderr) {
           if (error) {
             console.error('合成失败---', error);
@@ -164,10 +183,11 @@ var down = {
           },
         },
         (error, response) => {
-          if (response.statusCode === 200) {
+          // console.log(error, response)
+          if (response && response.statusCode === 200) {
             resolve(getUrlList(response.body));
           } else {
-            reject();
+            reject(error);
           }
         }
       );
@@ -181,10 +201,24 @@ const POSTFIX = '.m4s'
 // const HOST = 'https://video-hls.yzcdn.cn/';
 // const POSTFIX = '.ts'
 
-down.download('https://video.twimg.com/ext_tw_video/1536418546259046401/pu/pl/720x960/3LIKyCtjsGzkzKNs.m3u8?container=fmp4', resovePath('./video/test1'))
+// down.download('https://video.twimg.com/amplify_video/1537103411488989184/pl/978x716/3uTkfM9_vE4pkBvv.m3u8?container=fmp4', resovePath('./video/test'))
 
-// down.concatFiles(resovePath('./video/test'))
+// m3u8地址：https://video.twimg.com/amplify_video/1537103411488989184/pl/978x716/3uTkfM9_vE4pkBvv.m3u8?container=fmp4
+// 推特地址：https://twitter.com/TPostMillennial/status/1537103786086391809
+// down.concatFiles(resovePath('./video/test1'))
 
 // const text = fs.readFileSync(resovePath('./5_VR7I59oLhftSUR.m3u8'), 'utf8');
 // // console.log(text)
 // getUrlList(text)
+// down.cmd(resovePath('./video/test'), 'ffmpeg -i "concat:0.m4s|2.m4s" -acodec copy 2.mp4')
+
+async function concatFile() {
+  var arr = ['1.m4s', '2.m4s', '3.m4s', '4.m4s', '5.m4s', '6.m4s'];
+  for(let i = 0; i < arr.length; i++) {
+    await down.cmd(resovePath('./video/test'), `ffmpeg -i "concat:0.m4s|${arr[i]}" -acodec copy ${i}.mp4`)
+  }
+
+  down.cmd(resovePath('./video/test'), `ffmpeg -i mp4.txt -acodec copy -vcodec copy -absf aac_adtstoasc output.mp4`)
+}
+
+// concatFile()
